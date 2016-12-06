@@ -1,0 +1,20 @@
+
+.helloworld-label {
+    font-size: 36px;
+    font-weight: bold;
+    color: #ffffff;
+    background-color: rgba(10,10,10,0.7);
+    border-radius: 5px;
+    padding: .5em;
+}
+
+.activityAppLauncher_text {
+	text-align: center;
+	border: 0px;
+	margin: 0px;
+	padding: 0px;
+}
+
+.activityAppLauncher_element {
+	margin: 5px;
+}
