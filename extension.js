@@ -270,14 +270,14 @@ const ActivityAppLauncher = new Lang.Class({
 			var workspacesDisplay = Main.overview._controls.viewSelector._workspacesDisplay;
 			if (this.selected === null) {
 				this.appsLaunchContainer.hide();
-				Main.overview._controls._thumbnailsSlider.actor.show_all();
+				//Main.overview._controls._thumbnailsSlider.actor.show_all();
 				for (let i = 0; i < workspacesDisplay._workspacesViews.length; i++)
             	workspacesDisplay._workspacesViews[i].actor.show();
 				workspacesDisplay.actor.show();
 				Main.overview._controls.viewSelector.actor.show();
 			} else {
 				this.appsLaunchContainer.show_all();
-				Main.overview._controls._thumbnailsSlider.actor.hide();
+				//Main.overview._controls._thumbnailsSlider.actor.hide();
 				for (let i = 0; i < workspacesDisplay._workspacesViews.length; i++)
             	workspacesDisplay._workspacesViews[i].actor.hide();
 				workspacesDisplay.actor.hide();
