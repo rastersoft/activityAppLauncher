@@ -50,6 +50,8 @@ const ActivityAppLauncher = new Lang.Class({
 	
 	_show: function() {
 		this.visibility = "atexttoensurethateverythingworks";
+		this.selected = null;
+		this.setVisibility();
 		this.appsLaunchContainer.hide();
 		this._fillCategories();
 	},
@@ -62,13 +64,13 @@ const ActivityAppLauncher = new Lang.Class({
 		if (desired_mode) {
 			controls._oldUpdateSpacervisibility = controls._updateSpacerVisibility;
 			this.appsContainer = new St.Bin({x_expand: false, y_expand: true, y_fill:true, x_fill: true});
-			this.appsLaunchContainer = new St.Bin({x_expand: true, y_expand: true, y_fill:true, x_fill: true});
-			this.appsLaunchContainer.hide();
+			this.appsLaunchContainer = new St.Bin({y_fill:true, x_fill: true});
 			Main.overview._controls.viewSelector.actor.show_all();
 			Main.overview._controls._thumbnailsSlider.actor.show_all();
 
 			controls._updateSpacerVisibility = Lang.bind(this, function() {
 				controls._oldUpdateSpacervisibility();
+				this.selected = null;
 				if (controls._dashSpacer.visible) {
 					this.appsContainer.show_all();
 				} else {
@@ -92,8 +94,9 @@ const ActivityAppLauncher = new Lang.Class({
 
 		controls._group.add_actor(controls._dashSpacer);
 		if (desired_mode) {
-			controls._group.add(this.appsContainer);
-			controls._group.add(this.appsLaunchContainer);
+			controls._group.add(this.appsContainer, {x_fill: true, y_fill: false, expand: false});
+			controls._group.add(this.appsLaunchContainer, {expand: true});
+			this.appsLaunchContainer.hide();
 		}
 		controls._group.add(controls.viewSelector.actor, { x_fill: true, expand: true });
 		controls._group.add_actor(controls._thumbnailsSlider.actor);
@@ -107,7 +110,7 @@ const ActivityAppLauncher = new Lang.Class({
 			this.appsContainer.disconnect(this.appsContainer.customDestroyId);
 		}
 		this.appsInnerContainer = new St.BoxLayout({ vertical: true });
-		this.appsContainer.add_actor(this.appsInnerContainer);
+		this.appsContainer.add_actor(this.appsInnerContainer, {x_fill: true, y_fill: false, x_expand: false, y_expand: false});
 		this.appsContainer.customDestroyId = this.appsContainer.connect("destroy", Lang.bind(this, function(actor, event) {
 			actor.remove_actor(this.appsInnerContainer);
 		}));
@@ -197,29 +200,30 @@ const ActivityAppLauncher = new Lang.Class({
 			this.current_actor = null;
 		}
 		if (this.selected !== null) {
-			this.current_actor = new St.ScrollView({hscrollbar_policy: Gtk.PolicyType.NEVER});
-			this.appsLaunchContainer.add_actor(this.current_actor, {expand: true, fill: true});
+			this.current_actor = new St.ScrollView({hscrollbar_policy: Gtk.PolicyType.NEVER, x_fill: true, y_fill: true});
+			this.appsLaunchContainer.add_actor(this.current_actor, {x_expand: true, y_expand: true});
 			this.appsLaunchContainer.customDestroyId = this.appsLaunchContainer.connect("destroy", Lang.bind(this, function(actor, event) {
 				actor.remove_actor(this.current_actor);
 			}));
 			
-			this.iconsContainer = new St.BoxLayout({ vertical: true});
+			this.iconsContainer = new St.BoxLayout({ vertical: true, x_expand: true});
 			this.last_iconx = 0;
 			this.iconsContainer.customRealizeId = this.iconsContainer.connect_after("allocation-changed", Lang.bind(this, function(actor, event) {
 				let [sizex, sizey] = this.iconsContainer.get_size();
-				var iconx = Math.floor(sizex / ICON_WIDTH);
-				if (this.last_iconx == iconx) {
+				
+				if (this.last_iconx >= sizex) {
 					return;
 				}
-				this.last_iconx = iconx;
+				this.last_iconx = sizex;
+				var iconx = Math.floor(sizex / ICON_WIDTH);
 				this.iconsContainer.remove_all_children();
 				var position = 0;
 				var currentContainer = null;
 				for(let i = 0;i < button.launchers.length; i++) {
 					var element = button.launchers[i];
 					if (position == 0) {
-						currentContainer = new St.BoxLayout({vertical: false});
-						this.iconsContainer.add_child(currentContainer);
+						currentContainer = new St.BoxLayout({vertical: false, x_expand: true});
+						this.iconsContainer.add_child(currentContainer,{expand: true});
 					}
 					var tmpContainer = new St.BoxLayout({vertical: true, reactive: true, style_class:'popup-menu-item', width: ICON_WIDTH, height: ICON_HEIGHT});
 					tmpContainer.icon = element.create_icon_texture(ICON_SIZE);
@@ -252,7 +256,7 @@ const ActivityAppLauncher = new Lang.Class({
 				}
 				this.appsLaunchContainer.show_all();
 			}));
-			this.current_actor.add_actor(this.iconsContainer, {expand: true, fill: true});
+			this.current_actor.add_actor(this.iconsContainer, {x_fill: true, y_fill: true});
 			this.current_actor.customDestroyId = this.current_actor.connect("destroy", Lang.bind(this, function(actor, event) {
 				actor.remove_actor(this.iconsContainer);
 			}));
@@ -270,12 +274,14 @@ const ActivityAppLauncher = new Lang.Class({
 				for (let i = 0; i < workspacesDisplay._workspacesViews.length; i++)
             	workspacesDisplay._workspacesViews[i].actor.show();
 				workspacesDisplay.actor.show();
+				Main.overview._controls.viewSelector.actor.show();
 			} else {
 				this.appsLaunchContainer.show_all();
 				Main.overview._controls._thumbnailsSlider.actor.hide();
 				for (let i = 0; i < workspacesDisplay._workspacesViews.length; i++)
             	workspacesDisplay._workspacesViews[i].actor.hide();
 				workspacesDisplay.actor.hide();
+				Main.overview._controls.viewSelector.actor.hide();
 			}
 		}
 	}
@@ -290,7 +296,7 @@ const CathegoryMenuItem = new Lang.Class({
 		this.cat = cathegory;
 		this.launchers = launchers;
 		if (cathegory === null) {
-			cathegory = "Windows";
+			cathegory = _("Activities");
 		}
 		this.parent({label: cathegory, style_class: "world-clocks-button button", toggle_mode: true, can_focus: true, track_hover: true});
 		this.connect("clicked",Lang.bind(this,function() {
