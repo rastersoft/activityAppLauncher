@@ -50,7 +50,6 @@ const ActivityAppLauncher = new Lang.Class({
 	_show: function() {
 		this.visibility = "atexttoensurethateverythingworks";
 		this.appsLaunchContainer.hide();
-		//this.fill_cathegories();
 		this._fillCategories();
 	},
 
@@ -110,7 +109,6 @@ const ActivityAppLauncher = new Lang.Class({
 		this.appsContainer.add_actor(this.appsInnerContainer);
 		this.appsContainer.customDestroyId = this.appsContainer.connect("destroy", Lang.bind(this, function(actor, event) {
 			actor.remove_actor(this.appsInnerContainer);
-			actor.disconnect(actor.customDestroyId);
 		}));
 
 		this.buttons = [];
@@ -125,7 +123,6 @@ const ActivityAppLauncher = new Lang.Class({
       this.appsInnerContainer.add_child(categoryMenuItem);
 		this.appsInnerContainer.customDestroyId = this.appsInnerContainer.connect("destroy", Lang.bind(this, function(actor, event) {
 			actor.remove_actor(categoryMenuItem);
-			actor.disconnect(actor.customDestroyId);
 		}));
 		this.buttons.push(categoryMenuItem);
 
@@ -150,7 +147,6 @@ const ActivityAppLauncher = new Lang.Class({
 			this.appsInnerContainer.add_actor(categoryMenuItem);
 			this.appsInnerContainer.customDestroyId = this.appsInnerContainer.connect("destroy", Lang.bind(this, function(actor, event) {
 				actor.remove_actor(categoryMenuItem);
-				actor.disconnect(actor.customDestroyId);
 			}));
 			this.buttons.push(categoryMenuItem);
 		}
@@ -204,14 +200,12 @@ const ActivityAppLauncher = new Lang.Class({
 			this.appsLaunchContainer.add_actor(this.current_actor, {expand: true, fill: true});
 			this.appsLaunchContainer.customDestroyId = this.appsLaunchContainer.connect("destroy", Lang.bind(this, function(actor, event) {
 				actor.remove_actor(this.current_actor);
-				actor.disconnect(actor.customDestroyId);
 			}));
 			
 			this.iconsContainer = new St.BoxLayout({ vertical: true});
 			this.current_actor.add_actor(this.iconsContainer, {expand: true, fill: true});
 			this.current_actor.customDestroyId = this.current_actor.connect("destroy", Lang.bind(this, function(actor, event) {
 				actor.remove_actor(this.iconsContainer);
-				actor.disconnect(actor.customDestroyId);
 			}));
 
 			let [sizex, sizey] = this.appsLaunchContainer.get_size();
@@ -222,17 +216,9 @@ const ActivityAppLauncher = new Lang.Class({
 				var element = button.launchers[i];
 				if (position == 0) {
 					currentContainer = new St.BoxLayout({vertical: false});
-					log("contenedor_horizontal: "+currentContainer);
-					currentContainer.launchers = [];
 					this.iconsContainer.add_child(currentContainer);
-					currentContainer.customDestroyId = currentContainer.connect("destroy", Lang.bind(this,
-						function(actor, event) {
-							actor.remove_all_childs();
-							actor.disconnect(actor.customDestroyId);
-						}));
 				}
 				var tmpContainer = new St.BoxLayout({vertical: true, reactive: true, style_class:'popup-menu-item', width: ICON_WIDTH, height: ICON_HEIGHT});
-				log("contenedor iconotexto: "+tmpContainer);
 				tmpContainer.icon = element.create_icon_texture(ICON_SIZE);
 				tmpContainer.text = new St.Label({text: element.get_name(), style_class: 'activityAppLauncher_text'});
 				tmpContainer.text.clutter_text.line_wrap_mode = Pango.WrapMode.WORD;
@@ -240,7 +226,6 @@ const ActivityAppLauncher = new Lang.Class({
 				tmpContainer.add_child(tmpContainer.icon, {x_fill: false, y_fill: false,x_align: St.Align.MIDDLE, y_align: St.Align.START});
 				tmpContainer.add_child(tmpContainer.text, {x_fill: true, y_fill: true,x_align: St.Align.MIDDLE, y_align: St.Align.START});
 				currentContainer.add_child(tmpContainer);
-				currentContainer.launchers.push(tmpContainer);
 				
 				tmpContainer._app = element;
 				tmpContainer._customEventId = tmpContainer.connect('button-release-event', Lang.bind(this,
@@ -256,15 +241,6 @@ const ActivityAppLauncher = new Lang.Class({
 					function (actor, event) {
 						
 					}));
-				tmpContainer._customDestroyId = tmpContainer.connect('destroy', Lang.bind(this,
-					function(actor, event) {
-						actor.remove_all_childs();
-						actor.disconnect(actor._customEventId);
-						actor.disconnect(actor._customDestroyId);
-						actor.disconnect(actor._customEnterId);
-						actor.disconnect(actor._customDestroyId);
-					}));
-				
 				position++;
 				if (position == iconx) {
 					position = 0;
