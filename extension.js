@@ -8,9 +8,10 @@ const Shell = imports.gi.Shell;
 const Gtk = imports.gi.Gtk;
 const Pango = imports.gi.Pango;
 
-const ICON_WIDTH = 128;
-const ICON_HEIGHT = 128;
-const ICON_SIZE = 64;
+const ICON_SIZE = 96;
+const ICON_WIDTH = ICON_SIZE + 64;
+const ICON_HEIGHT = ICON_SIZE + 64;
+
 
 const init = function() {
 	return new ActivityAppLauncher();
@@ -203,49 +204,58 @@ const ActivityAppLauncher = new Lang.Class({
 			}));
 			
 			this.iconsContainer = new St.BoxLayout({ vertical: true});
+			this.last_iconx = 0;
+			this.iconsContainer.customRealizeId = this.iconsContainer.connect_after("allocation-changed", Lang.bind(this, function(actor, event) {
+				let [sizex, sizey] = this.iconsContainer.get_size();
+				var iconx = Math.floor(sizex / ICON_WIDTH);
+				if (this.last_iconx == iconx) {
+					return;
+				}
+				this.last_iconx = iconx;
+				this.iconsContainer.remove_all_children();
+				var position = 0;
+				var currentContainer = null;
+				for(let i = 0;i < button.launchers.length; i++) {
+					var element = button.launchers[i];
+					if (position == 0) {
+						currentContainer = new St.BoxLayout({vertical: false});
+						this.iconsContainer.add_child(currentContainer);
+					}
+					var tmpContainer = new St.BoxLayout({vertical: true, reactive: true, style_class:'popup-menu-item', width: ICON_WIDTH, height: ICON_HEIGHT});
+					tmpContainer.icon = element.create_icon_texture(ICON_SIZE);
+					tmpContainer.text = new St.Label({text: element.get_name(), style_class: 'activityAppLauncher_text'});
+					tmpContainer.text.clutter_text.line_wrap_mode = Pango.WrapMode.WORD;
+					tmpContainer.text.clutter_text.line_wrap = true;
+					tmpContainer.add_child(tmpContainer.icon, {x_fill: false, y_fill: false,x_align: St.Align.MIDDLE, y_align: St.Align.START});
+					tmpContainer.add_child(tmpContainer.text, {x_fill: true, y_fill: true,x_align: St.Align.MIDDLE, y_align: St.Align.START});
+					currentContainer.add_child(tmpContainer);
+					
+					tmpContainer._app = element;
+					tmpContainer._customEventId = tmpContainer.connect('button-release-event', Lang.bind(this,
+						function(actor, event) {
+							actor._app.open_new_window(-1);
+							Main.overview.hide();
+						})
+					);
+					tmpContainer._customEnterId = tmpContainer.connect('enter-event', Lang.bind(this,
+						function (actor, event) {
+							
+						}));
+					tmpContainer._customLeaveId = tmpContainer.connect('leave-event', Lang.bind(this,
+						function (actor, event) {
+							
+						}));
+					position++;
+					if (position == iconx) {
+						position = 0;
+					}
+				}
+				this.appsLaunchContainer.show_all();
+			}));
 			this.current_actor.add_actor(this.iconsContainer, {expand: true, fill: true});
 			this.current_actor.customDestroyId = this.current_actor.connect("destroy", Lang.bind(this, function(actor, event) {
 				actor.remove_actor(this.iconsContainer);
 			}));
-
-			let [sizex, sizey] = this.appsLaunchContainer.get_size();
-			var iconx = 8;
-			var position = 0;
-			var currentContainer = null;
-			for(let i = 0;i < button.launchers.length; i++) {
-				var element = button.launchers[i];
-				if (position == 0) {
-					currentContainer = new St.BoxLayout({vertical: false});
-					this.iconsContainer.add_child(currentContainer);
-				}
-				var tmpContainer = new St.BoxLayout({vertical: true, reactive: true, style_class:'popup-menu-item', width: ICON_WIDTH, height: ICON_HEIGHT});
-				tmpContainer.icon = element.create_icon_texture(ICON_SIZE);
-				tmpContainer.text = new St.Label({text: element.get_name(), style_class: 'activityAppLauncher_text'});
-				tmpContainer.text.clutter_text.line_wrap_mode = Pango.WrapMode.WORD;
-				tmpContainer.text.clutter_text.line_wrap = true;
-				tmpContainer.add_child(tmpContainer.icon, {x_fill: false, y_fill: false,x_align: St.Align.MIDDLE, y_align: St.Align.START});
-				tmpContainer.add_child(tmpContainer.text, {x_fill: true, y_fill: true,x_align: St.Align.MIDDLE, y_align: St.Align.START});
-				currentContainer.add_child(tmpContainer);
-				
-				tmpContainer._app = element;
-				tmpContainer._customEventId = tmpContainer.connect('button-release-event', Lang.bind(this,
-					function(actor, event) {
-						actor._app.open_new_window(-1);
-					})
-				);
-				tmpContainer._customEnterId = tmpContainer.connect('enter-event', Lang.bind(this,
-					function (actor, event) {
-						
-					}));
-				tmpContainer._customLeaveId = tmpContainer.connect('leave-event', Lang.bind(this,
-					function (actor, event) {
-						
-					}));
-				position++;
-				if (position == iconx) {
-					position = 0;
-				}
-			}
 			this.appsLaunchContainer.show_all();
 		}
 	},
