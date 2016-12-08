@@ -215,7 +215,7 @@ const ActivityAppLauncher = new Lang.Class({
 					return;
 				}
 				this.last_iconx = sizex;
-				var iconx = Math.floor(sizex / ICON_WIDTH);
+				var iconx = Math.floor(sizex / (ICON_WIDTH + 10));
 				this.iconsContainer.remove_all_children();
 				var position = 0;
 				var currentContainer = null;
@@ -225,7 +225,7 @@ const ActivityAppLauncher = new Lang.Class({
 						currentContainer = new St.BoxLayout({vertical: false, x_expand: true});
 						this.iconsContainer.add_child(currentContainer,{expand: true});
 					}
-					var tmpContainer = new St.BoxLayout({vertical: true, reactive: true, style_class:'popup-menu-item', width: ICON_WIDTH, height: ICON_HEIGHT});
+					var tmpContainer = new St.BoxLayout({vertical: true, reactive: true, style_class:'activityAppLauncher_element', width: ICON_WIDTH, height: ICON_HEIGHT});
 					tmpContainer.icon = element.create_icon_texture(ICON_SIZE);
 					tmpContainer.text = new St.Label({text: element.get_name(), style_class: 'activityAppLauncher_text'});
 					tmpContainer.text.clutter_text.line_wrap_mode = Pango.WrapMode.WORD;
@@ -243,11 +243,12 @@ const ActivityAppLauncher = new Lang.Class({
 					);
 					tmpContainer._customEnterId = tmpContainer.connect('enter-event', Lang.bind(this,
 						function (actor, event) {
-							
+							actor.set_style_pseudo_class("selected");
 						}));
+
 					tmpContainer._customLeaveId = tmpContainer.connect('leave-event', Lang.bind(this,
 						function (actor, event) {
-							
+							actor.set_style_pseudo_class("");
 						}));
 					position++;
 					if (position == iconx) {

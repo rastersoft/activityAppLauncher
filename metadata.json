@@ -1,1 +1,6 @@
-{"name": "Activity App Launcher", "shell-version": ["3.22.1"], "description": "Integrates an app launcher in the activities window", "uuid": "activityAppLauncher@rastersoft.com"}
+{
+	"name": "Activity App Launcher",
+	"shell-version": ["3.22"],
+	"description": "Integrates a category-based application launcher in the activities window",
+	"uuid": "activityAppLauncher@rastersoft.com"
+}
