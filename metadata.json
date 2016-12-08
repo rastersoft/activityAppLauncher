@@ -2,5 +2,6 @@
 	"name": "Activity App Launcher",
 	"shell-version": ["3.22"],
 	"description": "Integrates a category-based application launcher in the activities window",
-	"uuid": "activityAppLauncher@rastersoft.com"
+	"uuid": "activityAppLauncher@rastersoft.com",
+	"url": "https://github.com/rastersoft/activityAppLauncher"
 }
