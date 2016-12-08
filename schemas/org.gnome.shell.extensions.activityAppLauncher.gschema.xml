@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+
+  <!-- <enum id="org.gnome.shell.extensions.activityAppLauncher.menu_button_enum">
+    <value nick="Icon and text" value="0" />
+    <value nick="Only icon" value="1" />
+    <value nick="Only text" value="2" />
+ </enum> -->
+  <schema path="/org/gnome/shell/extensions/activityAppLauncher/" id="org.gnome.shell.extensions.activityAppLauncher">
+    <!-- <key type="b" name="disable-activities-hotspot">
+        <default>false</default>
+        <summary>Disable the Activities (top left) hotspot</summary>
+        <description>Disables the top left hotspot (that triggers the Activities mode).</description>
+    </key> -->
+    <key type="b" name="show-virtual-desktops">
+        <default>true</default>
+        <summary>Show virtual desktops.</summary>
+        <description>Shows the virtual desktops when a category has been chosen.</description>
+    </key>
+    <key type="i" name="icon-size">
+        <default>96</default>
+        <summary>Size for icons</summary>
+        <description>Specify the size for the icons in pixels.</description>
+    </key>
+    <!-- <key name="menu-button" enum="org.gnome.shell.extensions.activityAppLauncher.menu_button_enum">
+      <default>"Icon and text"</default>
+      <summary>Style for the main button</summary>
+      <description>Allows to customize the menu button</description>
+	</key> -->
+  </schema>
+</schemalist>

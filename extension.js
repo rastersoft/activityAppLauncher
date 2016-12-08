@@ -7,11 +7,10 @@ const GMenu = imports.gi.GMenu;
 const Shell = imports.gi.Shell;
 const Gtk = imports.gi.Gtk;
 const Pango = imports.gi.Pango;
+const ExtensionUtils = imports.misc.extensionUtils;
+const Gio = imports.gi.Gio;
 
-const ICON_SIZE = 96;
-const ICON_WIDTH = ICON_SIZE + 64;
-const ICON_HEIGHT = ICON_SIZE + 64;
-
+const SCHEMA = 'org.gnome.shell.extensions.activityAppLauncher';
 
 const init = function() {
 	return new ActivityAppLauncher();
@@ -26,8 +25,46 @@ const ActivityAppLauncher = new Lang.Class({
 		 this.selected = null;
 		 this.current_actor = null;
 		 this._appSys = Shell.AppSystem.get_default();
+		 this._settings = this._get_schema(SCHEMA);
+		 this._settings.connect('changed',Lang.bind(this,this._onChangedSetting));
+		 this._onChangedSetting();
 	},
-	
+
+	_onChangedSetting: function() {
+		this.icon_size = this._settings.get_int("icon-size");
+		this.show_virtual_desktops = this._settings.get_boolean("show-virtual-desktops");
+		this.icon_width = Math.floor(this.icon_size * 2);
+		this.icon_height = Math.floor(this.icon_size * 1.8);
+		
+	},
+
+	_get_schema: function (schema) {
+	    let extension = ExtensionUtils.getCurrentExtension();
+
+	    const GioSSS = Gio.SettingsSchemaSource;
+
+	    // check if this extension was built with "make zip-file", and thus
+	    // has the schema files in a subfolder
+	    // otherwise assume that extension has been installed in the
+	    // same prefix as gnome-shell (and therefore schemas are available
+	    // in the standard folders)
+	    let schemaDir = extension.dir.get_child('schemas');
+	    let schemaSource;
+	    if (schemaDir.query_exists(null))
+	        schemaSource = GioSSS.new_from_directory(schemaDir.get_path(),
+	                                                 GioSSS.get_default(),
+	                                                 false);
+	    else
+	        schemaSource = GioSSS.get_default();
+
+	    let schemaObj = schemaSource.lookup(schema, true);
+	    if (!schemaObj)
+	        throw new Error('Schema ' + schema + ' could not be found for extension '
+	                        + extension.metadata.uuid + '. Please check your installation.');
+
+	    return new Gio.Settings({ settings_schema: schemaObj });
+	},
+
 	enable: function() {
 		this.fill_elements(true);
 		this.showingId = Main.overview.connect('showing', Lang.bind(this, this._show));
@@ -215,7 +252,7 @@ const ActivityAppLauncher = new Lang.Class({
 					return;
 				}
 				this.last_iconx = sizex;
-				var iconx = Math.floor(sizex / (ICON_WIDTH + 10));
+				var iconx = Math.floor(sizex / this.icon_width);
 				this.iconsContainer.remove_all_children();
 				var position = 0;
 				var currentContainer = null;
@@ -225,8 +262,8 @@ const ActivityAppLauncher = new Lang.Class({
 						currentContainer = new St.BoxLayout({vertical: false, x_expand: true});
 						this.iconsContainer.add_child(currentContainer,{expand: true});
 					}
-					var tmpContainer = new St.BoxLayout({vertical: true, reactive: true, style_class:'activityAppLauncher_element', width: ICON_WIDTH, height: ICON_HEIGHT});
-					tmpContainer.icon = element.create_icon_texture(ICON_SIZE);
+					var tmpContainer = new St.BoxLayout({vertical: true, reactive: true, style_class:'activityAppLauncher_element', width: this.icon_width, height: this.icon_height});
+					tmpContainer.icon = element.create_icon_texture(this.icon_size);
 					tmpContainer.text = new St.Label({text: element.get_name(), style_class: 'activityAppLauncher_text'});
 					tmpContainer.text.clutter_text.line_wrap_mode = Pango.WrapMode.WORD;
 					tmpContainer.text.clutter_text.line_wrap = true;
@@ -271,14 +308,18 @@ const ActivityAppLauncher = new Lang.Class({
 			var workspacesDisplay = Main.overview._controls.viewSelector._workspacesDisplay;
 			if (this.selected === null) {
 				this.appsLaunchContainer.hide();
-				//Main.overview._controls._thumbnailsSlider.actor.show_all();
+				if (!this.show_virtual_desktops) {
+					Main.overview._controls._thumbnailsSlider.actor.show_all();
+				}
 				for (let i = 0; i < workspacesDisplay._workspacesViews.length; i++)
             	workspacesDisplay._workspacesViews[i].actor.show();
 				workspacesDisplay.actor.show();
 				Main.overview._controls.viewSelector.actor.show();
 			} else {
 				this.appsLaunchContainer.show_all();
-				//Main.overview._controls._thumbnailsSlider.actor.hide();
+				if (!this.show_virtual_desktops) {
+					Main.overview._controls._thumbnailsSlider.actor.hide();
+				}
 				for (let i = 0; i < workspacesDisplay._workspacesViews.length; i++)
             	workspacesDisplay._workspacesViews[i].actor.hide();
 				workspacesDisplay.actor.hide();
