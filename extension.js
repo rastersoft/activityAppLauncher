@@ -12,6 +12,12 @@ const Gio = imports.gi.Gio;
 
 const SCHEMA = 'org.gnome.shell.extensions.activityAppLauncher';
 
+/**
+Version 1: first public version
+Version 2: more elegant way for inserting the elements in the activities window
+           now, when uninstalling the extension, removes all actors (forgot to remove appsLaunchContainer)
+*/
+
 const init = function() {
 	return new ActivityAppLauncher();
 }
@@ -35,7 +41,6 @@ const ActivityAppLauncher = new Lang.Class({
 		this.show_virtual_desktops = this._settings.get_boolean("show-virtual-desktops");
 		this.icon_width = Math.floor(this.icon_size * 2);
 		this.icon_height = Math.floor(this.icon_size * 1.8);
-		
 	},
 
 	_get_schema: function (schema) {
@@ -84,7 +89,7 @@ const ActivityAppLauncher = new Lang.Class({
 		}
 		this.appsLaunchContainer.hide();
 	},
-	
+
 	_show: function() {
 		this.visibility = "atexttoensurethateverythingworks";
 		this.selected = null;
@@ -106,7 +111,6 @@ const ActivityAppLauncher = new Lang.Class({
 			Main.overview._controls._thumbnailsSlider.actor.show_all();
 
 			controls._updateSpacerVisibility = Lang.bind(this, function() {
-				controls._oldUpdateSpacervisibility();
 				this.selected = null;
 				if (controls._dashSpacer.visible) {
 					this.appsContainer.show_all();
@@ -114,22 +118,16 @@ const ActivityAppLauncher = new Lang.Class({
 					this.appsContainer.hide();
 				}
 				this.setVisibility();
+				controls._oldUpdateSpacervisibility();
 			});
 		} else {
-			controls._updateSpacerVisibility = controls._oldUpdateSpacervisibility;
-			old_group.remove_actor(appsContainer);
+			controls._group.remove_actor(this.appsContainer);
+			controls._group.remove_actor(this.appsLaunchContainer);
 		}
 
-		controls._group = new St.BoxLayout({ name: 'overview-group', x_expand: true, y_expand: true });
-		controls.actor.remove_actor(old_group);
-		controls.actor.remove_actor(controls._dashSlider.actor);
-		controls.actor.add_actor(controls._group);
-		controls.actor.add_actor(controls._dashSlider.actor);
-		old_group.remove_actor(controls._dashSpacer);
-		old_group.remove_actor(controls.viewSelector.actor);
-		old_group.remove_actor(controls._thumbnailsSlider.actor);
+		controls._group.remove_actor(controls.viewSelector.actor);
+		controls._group.remove_actor(controls._thumbnailsSlider.actor);
 
-		controls._group.add_actor(controls._dashSpacer);
 		if (desired_mode) {
 			controls._group.add(this.appsContainer, {x_fill: true, y_fill: false, expand: false});
 			controls._group.add(this.appsLaunchContainer, {expand: true});
