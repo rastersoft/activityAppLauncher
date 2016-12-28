@@ -18,12 +18,13 @@ Gettext.bindtextdomain("activityAppLauncher", ExtensionUtils.getCurrentExtension
 
 const _ = Gettext.gettext;
 /**
-Version 1:  *first public version
-Version 2:  *more elegant way for inserting the elements in the activities window
-			*now, when uninstalling the extension, removes all actors (forgot to
-			 remove appsLaunchContainer)
-Version 3:  *added "Favorites" and "Most used" buttons
-
+Version 1:  * First public version
+Version 2:  * More elegant way for inserting the elements in the activities window
+			* Now, when uninstalling the extension, removes all actors (forgot to
+			  remove appsLaunchContainer)
+Version 3:  * Added "Favorites" button
+Version 4:  * Added "Most used" button
+			* Better memory management
 */
 
 const init = function() {
@@ -34,14 +35,15 @@ const ActivityAppLauncher = new Lang.Class({
 	Name: 'ActivityAppLauncher',
 
 	_init: function() {
-		 this._applicationsButtons = null;
-		 this.appsInnerContainer = null;
-		 this.selected = null;
-		 this.current_actor = null;
-		 this._appSys = Shell.AppSystem.get_default();
-		 this._settings = this._get_schema(SCHEMA);
-		 this._settings.connect('changed',Lang.bind(this,this._onChangedSetting));
-		 this._onChangedSetting();
+		Main.overview._controls._oldUpdateSpacervisibility = null;
+		this._applicationsButtons = null;
+		this.appsInnerContainer = null;
+		this.selected = null;
+		this.currentActor = null;
+		this._appSys = Shell.AppSystem.get_default();
+		this._settings = this._get_schema(SCHEMA);
+		this._settings.connect('changed',Lang.bind(this,this._onChangedSetting));
+		this._onChangedSetting();
 	},
 
 	_onChangedSetting: function() {
@@ -93,9 +95,9 @@ const ActivityAppLauncher = new Lang.Class({
 	},
 
 	_hide: function() {
-		if (this.current_actor !== null) {
-			this.appsLaunchContainer.remove_actor(this.current_actor);
-			this.current_actor = null;
+		if (this.currentActor !== null) {
+			this.appsLaunchContainer.remove_actor(this.currentActor);
+			this.currentActor = null;
 		}
 		this.appsLaunchContainer.hide();
 	},
@@ -113,7 +115,9 @@ const ActivityAppLauncher = new Lang.Class({
 		var controls = Main.overview._controls;
 
 		if (desired_mode) {
-			controls._oldUpdateSpacervisibility = controls._updateSpacerVisibility;
+			if (controls._oldUpdateSpacervisibility === null) {
+				controls._oldUpdateSpacervisibility = controls._updateSpacerVisibility;
+			}
 			this.appsContainer = new St.Bin({x_expand: false, y_expand: true, y_fill:true, x_fill: true});
 			this.appsLaunchContainer = new St.Bin({y_fill:true, x_fill: true});
 			Main.overview._controls.viewSelector.actor.show_all();
@@ -130,6 +134,10 @@ const ActivityAppLauncher = new Lang.Class({
 				controls._oldUpdateSpacervisibility();
 			});
 		} else {
+			if (controls._oldUpdateSpacervisibility !== null) {
+				controls._updateSpacerVisibility = controls._oldUpdateSpacervisibility;
+			}
+			controls._oldUpdateSpacervisibility = null;
 			controls._group.remove_actor(this.appsContainer);
 			controls._group.remove_actor(this.appsLaunchContainer);
 			this.appsContainer = null;
@@ -152,38 +160,34 @@ const ActivityAppLauncher = new Lang.Class({
 
 		this.selected = null;
 		if (this.appsInnerContainer !== null) {
-			this.appsContainer.disconnect(this.appsContainer.customDestroyId);
 			this.appsContainer.remove_actor(this.appsInnerContainer);
 		}
 		this.appsInnerContainer = new St.BoxLayout({ vertical: true });
 		this.appsContainer.add_actor(this.appsInnerContainer, {x_fill: true, y_fill: false, x_expand: false, y_expand: false});
-		this.appsContainer.customDestroyId = this.appsContainer.connect("destroy", Lang.bind(this, function(actor, event) {
-			actor.remove_actor(this.appsInnerContainer);
+		this.appsInnerContainer.connect("destroy", Lang.bind(this, function(actor, event) {
+			for(var i = 0;i < actor.buttons.length; i++) {
+				actor.remove_actor(actor.buttons[i]);
+			}
 		}));
 
-		this.buttons = [];
-		this._appList=[];
-		this._appClass=[];
+		this.appsInnerContainer.buttons = [];
+		this.appsInnerContainer.appList=[];
+		this.appsInnerContainer.appClass=[];
 
 		let tree = new GMenu.Tree({ menu_basename: 'applications.menu' });
 		tree.load_sync();
 		let root = tree.get_root_directory();
 		let categoryMenuItem = new CathegoryMenuItem(this,1,_("Windows"), null);
 		this.appsInnerContainer.add_child(categoryMenuItem);
-		this.appsInnerContainer.customDestroyId = this.appsInnerContainer.connect("destroy", Lang.bind(this, function(actor, event) {
-			for(var i = 0;i < this.buttons.length; i++) {
-				actor.remove_actor(this.buttons[i]);
-			}
-		}));
-		this.buttons.push(categoryMenuItem);
+		this.appsInnerContainer.buttons.push(categoryMenuItem);
 		
 		let favoritesMenuItem = new CathegoryMenuItem(this,2,_("Favorites"), null);
 		this.appsInnerContainer.add_actor(favoritesMenuItem);
-		this.buttons.push(favoritesMenuItem);
+		this.appsInnerContainer.buttons.push(favoritesMenuItem);
 
 		let mostUsedMenuItem = new CathegoryMenuItem(this,3,_("Most used"), null);
 		this.appsInnerContainer.add_actor(mostUsedMenuItem);
-		this.buttons.push(mostUsedMenuItem);
+		this.appsInnerContainer.buttons.push(mostUsedMenuItem);
 
 		let iter = root.iter();
 		let nextType;
@@ -195,16 +199,16 @@ const ActivityAppLauncher = new Lang.Class({
 				if (childrens.length != 0) {
 					childrens.sort(this._sortApps);
 					let item = { dirItem: dir, dirChilds: childrens };
-					this._appClass.push(item);
+					this.appsInnerContainer.appClass.push(item);
 				}
 			}
 		 }
 		}
-		this._appList.sort(this._sortApps);
-		for (var i = 0; i < this._appClass.length; i++) {
-			let categoryMenuItem = new CathegoryMenuItem(this,0,this._appClass[i].dirItem.get_name(), this._appClass[i].dirChilds);
+		this.appsInnerContainer.appList.sort(this._sortApps);
+		for (var i = 0; i < this.appsInnerContainer.appClass.length; i++) {
+			let categoryMenuItem = new CathegoryMenuItem(this,0,this.appsInnerContainer.appClass[i].dirItem.get_name(), this.appsInnerContainer.appClass[i].dirChilds);
 			this.appsInnerContainer.add_actor(categoryMenuItem);
-			this.buttons.push(categoryMenuItem);
+			this.appsInnerContainer.buttons.push(categoryMenuItem);
 		}
 	},
 
@@ -217,7 +221,6 @@ const ActivityAppLauncher = new Lang.Class({
 	},
 
 	_fillCategories2: function(dir,childrens) {
-
 		let iter = dir.iter();
 		let nextType;
 
@@ -227,7 +230,7 @@ const ActivityAppLauncher = new Lang.Class({
 				if (!entry.get_app_info().get_nodisplay()) {
 					let app = this._appSys.lookup_app(entry.get_desktop_file_id());
 					childrens.push(app);
-					this._appList.push(app);
+					this.appsInnerContainer.appList.push(app);
 				}
 			} else if (nextType == GMenu.TreeItemType.DIRECTORY) {
 				childrens = this._fillCategories2(iter.get_directory(), childrens);
@@ -237,8 +240,8 @@ const ActivityAppLauncher = new Lang.Class({
 	},
 
 	clickedCathegory: function(button) {
-		for(var i = 0; i < this.buttons.length; i++) {
-			var tmpbutton = this.buttons[i];
+		for(var i = 0; i < this.appsInnerContainer.buttons.length; i++) {
+			var tmpbutton = this.appsInnerContainer.buttons[i];
 			if (button == tmpbutton) {
 				tmpbutton.checked = true;
 			} else {
@@ -251,29 +254,24 @@ const ActivityAppLauncher = new Lang.Class({
 			this.selected = button.cat;
 		}
 		this.setVisibility();
-		if (this.current_actor !== null) {
-			this.appsLaunchContainer.disconnect(this.appsLaunchContainer.customDestroyId);
-			this.appsLaunchContainer.remove_actor(this.current_actor);
-			this.current_actor = null;
+		if (this.currentActor !== null) {
+			this.appsLaunchContainer.remove_actor(this.currentActor);
+			this.currentActor = null;
 		}
 		if (this.selected !== null) {
-			this.current_actor = new St.ScrollView({hscrollbar_policy: Gtk.PolicyType.NEVER, x_fill: true, y_fill: true});
-			this.appsLaunchContainer.add_actor(this.current_actor, {x_expand: true, y_expand: true});
-			this.appsLaunchContainer.customDestroyId = this.appsLaunchContainer.connect("destroy", Lang.bind(this, function(actor, event) {
-				actor.remove_actor(this.current_actor);
-			}));
-			
-			this.iconsContainer = new St.BoxLayout({ vertical: true, x_expand: true});
+			this.currentActor = new St.ScrollView({hscrollbar_policy: Gtk.PolicyType.NEVER, x_fill: true, y_fill: true});
+			this.appsLaunchContainer.add_actor(this.currentActor, {x_expand: true, y_expand: true});
+			this.currentActor.iconsContainer = new St.BoxLayout({ vertical: true, x_expand: true});
 			this.last_iconx = 0;
-			this.iconsContainer.customRealizeId = this.iconsContainer.connect_after("allocation-changed", Lang.bind(this, function(actor, event) {
-				let [sizex, sizey] = this.iconsContainer.get_size();
+			this.currentActor.iconsContainer.customRealizeId = this.currentActor.iconsContainer.connect_after("allocation-changed", Lang.bind(this, function(actor, event) {
+				let [sizex, sizey] = this.currentActor.iconsContainer.get_size();
 				
 				if (this.last_iconx >= sizex) {
 					return;
 				}
 				this.last_iconx = sizex;
 				var iconx = Math.floor(sizex / this.icon_width);
-				this.iconsContainer.remove_all_children();
+				this.currentActor.iconsContainer.remove_all_children();
 				var position = 0;
 				var currentContainer = null;
 				var launcherList = null;
@@ -296,7 +294,7 @@ const ActivityAppLauncher = new Lang.Class({
 						var element = launcherList[i];
 						if (position == 0) {
 							currentContainer = new St.BoxLayout({vertical: false, x_expand: true});
-							this.iconsContainer.add_child(currentContainer,{expand: true});
+							this.currentActor.iconsContainer.add_child(currentContainer,{expand: true});
 						}
 						var tmpContainer = new St.BoxLayout({vertical: true, reactive: true, style_class:'activityAppLauncher_element', width: this.icon_width, height: this.icon_height});
 						tmpContainer.icon = element.create_icon_texture(this.icon_size);
@@ -331,10 +329,7 @@ const ActivityAppLauncher = new Lang.Class({
 				}
 				this.appsLaunchContainer.show_all();
 			}));
-			this.current_actor.add_actor(this.iconsContainer, {x_fill: true, y_fill: true});
-			this.current_actor.customDestroyId = this.current_actor.connect("destroy", Lang.bind(this, function(actor, event) {
-				actor.remove_actor(this.iconsContainer);
-			}));
+			this.currentActor.add_actor(this.currentActor.iconsContainer, {x_fill: true, y_fill: true});
 			this.appsLaunchContainer.show_all();
 		}
 	},
