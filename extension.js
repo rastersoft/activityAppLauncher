@@ -25,6 +25,8 @@ Version 2:  * More elegant way for inserting the elements in the activities wind
 Version 3:  * Added "Favorites" button
 Version 4:  * Added "Most used" button
 			* Better memory management
+Version 5:  * Ensures that no foraneous elements remain in the system
+Version 6:  * Litle stupid change
 */
 
 const init = function() {
@@ -35,7 +37,6 @@ const ActivityAppLauncher = new Lang.Class({
 	Name: 'ActivityAppLauncher',
 
 	_init: function() {
-		Main.overview._controls._oldUpdateSpacervisibility = null;
 		this._applicationsButtons = null;
 		this.appsInnerContainer = null;
 		this.selected = null;
@@ -92,6 +93,7 @@ const ActivityAppLauncher = new Lang.Class({
 		this.fill_elements(false);
 		Main.overview.disconnect(this.showingId);
 		Main.overview.disconnect(this.hidingId);
+		delete (Main.overview._controls._oldUpdateSpacervisibility);
 	},
 
 	_hide: function() {
@@ -115,7 +117,7 @@ const ActivityAppLauncher = new Lang.Class({
 		var controls = Main.overview._controls;
 
 		if (desired_mode) {
-			if (controls._oldUpdateSpacervisibility === null) {
+			if (typeof(controls._oldUpdateSpacervisibility) === "undefined") {
 				controls._oldUpdateSpacervisibility = controls._updateSpacerVisibility;
 			}
 			this.appsContainer = new St.Bin({x_expand: false, y_expand: true, y_fill:true, x_fill: true});
@@ -134,7 +136,7 @@ const ActivityAppLauncher = new Lang.Class({
 				controls._oldUpdateSpacervisibility();
 			});
 		} else {
-			if (controls._oldUpdateSpacervisibility !== null) {
+			if (typeof(controls._oldUpdateSpacervisibility) !== "undefined") {
 				controls._updateSpacerVisibility = controls._oldUpdateSpacervisibility;
 			}
 			controls._oldUpdateSpacervisibility = null;
