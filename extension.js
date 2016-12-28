@@ -9,13 +9,21 @@ const Gtk = imports.gi.Gtk;
 const Pango = imports.gi.Pango;
 const ExtensionUtils = imports.misc.extensionUtils;
 const Gio = imports.gi.Gio;
-
+const Favorites = imports.ui.appFavorites;
 const SCHEMA = 'org.gnome.shell.extensions.activityAppLauncher';
+const Gettext = imports.gettext;
 
+Gettext.textdomain("activityAppLauncher");
+Gettext.bindtextdomain("activityAppLauncher", ExtensionUtils.getCurrentExtension().path + "/locale");
+
+const _ = Gettext.gettext;
 /**
-Version 1: first public version
-Version 2: more elegant way for inserting the elements in the activities window
-           now, when uninstalling the extension, removes all actors (forgot to remove appsLaunchContainer)
+Version 1:  *first public version
+Version 2:  *more elegant way for inserting the elements in the activities window
+			*now, when uninstalling the extension, removes all actors (forgot to
+			 remove appsLaunchContainer)
+Version 3:  *added a Favorites button
+			*fixed the removing of connected signals
 */
 
 const init = function() {
@@ -23,9 +31,9 @@ const init = function() {
 }
 
 const ActivityAppLauncher = new Lang.Class({
-    Name: 'ActivityAppLauncher',
+	Name: 'ActivityAppLauncher',
 
-    _init: function() {
+	_init: function() {
 		 this._applicationsButtons = null;
 		 this.appsInnerContainer = null;
 		 this.selected = null;
@@ -44,34 +52,35 @@ const ActivityAppLauncher = new Lang.Class({
 	},
 
 	_get_schema: function (schema) {
-	    let extension = ExtensionUtils.getCurrentExtension();
+		let extension = ExtensionUtils.getCurrentExtension();
 
-	    const GioSSS = Gio.SettingsSchemaSource;
+		const GioSSS = Gio.SettingsSchemaSource;
 
-	    // check if this extension was built with "make zip-file", and thus
-	    // has the schema files in a subfolder
-	    // otherwise assume that extension has been installed in the
-	    // same prefix as gnome-shell (and therefore schemas are available
-	    // in the standard folders)
-	    let schemaDir = extension.dir.get_child('schemas');
-	    let schemaSource;
-	    if (schemaDir.query_exists(null))
-	        schemaSource = GioSSS.new_from_directory(schemaDir.get_path(),
-	                                                 GioSSS.get_default(),
-	                                                 false);
-	    else
-	        schemaSource = GioSSS.get_default();
+		// check if this extension was built with "make zip-file", and thus
+		// has the schema files in a subfolder
+		// otherwise assume that extension has been installed in the
+		// same prefix as gnome-shell (and therefore schemas are available
+		// in the standard folders)
+		let schemaDir = extension.dir.get_child('schemas');
+		let schemaSource;
+		if (schemaDir.query_exists(null))
+			schemaSource = GioSSS.new_from_directory(schemaDir.get_path(),
+													 GioSSS.get_default(),
+													 false);
+		else
+			schemaSource = GioSSS.get_default();
 
-	    let schemaObj = schemaSource.lookup(schema, true);
-	    if (!schemaObj)
-	        throw new Error('Schema ' + schema + ' could not be found for extension '
-	                        + extension.metadata.uuid + '. Please check your installation.');
+		let schemaObj = schemaSource.lookup(schema, true);
+		if (!schemaObj)
+			throw new Error('Schema ' + schema + ' could not be found for extension '
+							+ extension.metadata.uuid + '. Please check your installation.');
 
-	    return new Gio.Settings({ settings_schema: schemaObj });
+		return new Gio.Settings({ settings_schema: schemaObj });
 	},
 
 	enable: function() {
 		this.fill_elements(true);
+		this.favorites = Favorites.getAppFavorites();
 		this.showingId = Main.overview.connect('showing', Lang.bind(this, this._show));
 		this.hidingId = Main.overview.connect('hiding',Lang.bind(this,this._hide));
 	},
@@ -151,45 +160,48 @@ const ActivityAppLauncher = new Lang.Class({
 		}));
 
 		this.buttons = [];
-      this._appList=[];
-      this._appClass=[];
+		this._appList=[];
+		this._appClass=[];
 
-      let tree = new GMenu.Tree({ menu_basename: 'applications.menu' });
-      tree.load_sync();
-      let root = tree.get_root_directory();
-
+		let tree = new GMenu.Tree({ menu_basename: 'applications.menu' });
+		tree.load_sync();
+		let root = tree.get_root_directory();
 		let categoryMenuItem = new CathegoryMenuItem(this,null, null);
-      this.appsInnerContainer.add_child(categoryMenuItem);
+		this.appsInnerContainer.add_child(categoryMenuItem);
 		this.appsInnerContainer.customDestroyId = this.appsInnerContainer.connect("destroy", Lang.bind(this, function(actor, event) {
-			actor.remove_actor(categoryMenuItem);
+			for(var i = 0;i < this.buttons.length; i++) {
+				actor.remove_actor(this.buttons[i]);
+			}
 		}));
 		this.buttons.push(categoryMenuItem);
+		
+		let favoritesMenuItem = new CathegoryMenuItem(this,_("Favorites"), null);
+		this.appsInnerContainer.add_actor(favoritesMenuItem);
+		this.buttons.push(favoritesMenuItem);
 
-      let iter = root.iter();
-      let nextType;
-      while ((nextType = iter.next()) != GMenu.TreeItemType.INVALID) {
-      	if (nextType == GMenu.TreeItemType.DIRECTORY) {
-            let dir = iter.get_directory();
+		let iter = root.iter();
+		let nextType;
+		while ((nextType = iter.next()) != GMenu.TreeItemType.INVALID) {
+			if (nextType == GMenu.TreeItemType.DIRECTORY) {
+				let dir = iter.get_directory();
 				if (!dir.get_is_nodisplay()) {
-            	let childrens = this._fillCategories2(dir,[]);
-            	if (childrens.length != 0) {
-						childrens.sort(this._sortApps);
-	            	let item = { dirItem: dir, dirChilds: childrens };
-	            	this._appClass.push(item);
-					}
-            }
-         }
-      }
-   	this._appList.sort(this._sortApps);
+					let childrens = this._fillCategories2(dir,[]);
+				if (childrens.length != 0) {
+					childrens.sort(this._sortApps);
+					let item = { dirItem: dir, dirChilds: childrens };
+					this._appClass.push(item);
+				}
+			}
+		 }
+		}
+		this._appList.sort(this._sortApps);
 		for (var i = 0; i < this._appClass.length; i++) {
 			let categoryMenuItem = new CathegoryMenuItem(this,this._appClass[i].dirItem.get_name(), this._appClass[i].dirChilds);
 			this.appsInnerContainer.add_actor(categoryMenuItem);
-			this.appsInnerContainer.customDestroyId = this.appsInnerContainer.connect("destroy", Lang.bind(this, function(actor, event) {
-				actor.remove_actor(categoryMenuItem);
-			}));
 			this.buttons.push(categoryMenuItem);
 		}
 	},
+
 	_sortApps: function(param1, param2) {
 		if (param1.get_name().toUpperCase()<param2.get_name().toUpperCase()) {
 			return -1;
@@ -198,25 +210,25 @@ const ActivityAppLauncher = new Lang.Class({
 		}
 	},
 
-    _fillCategories2: function(dir,childrens) {
+	_fillCategories2: function(dir,childrens) {
 
-        let iter = dir.iter();
-        let nextType;
+		let iter = dir.iter();
+		let nextType;
 
-        while ((nextType = iter.next()) != GMenu.TreeItemType.INVALID) {
-            if (nextType == GMenu.TreeItemType.ENTRY) {
-                let entry = iter.get_entry();
-                if (!entry.get_app_info().get_nodisplay()) {
-                    let app = this._appSys.lookup_app(entry.get_desktop_file_id());
-                    childrens.push(app);
-                    this._appList.push(app);
-                }
-            } else if (nextType == GMenu.TreeItemType.DIRECTORY) {
-                childrens = this._fillCategories2(iter.get_directory(), childrens);
-            }
-        }
-		  return childrens;
-    },
+		while ((nextType = iter.next()) != GMenu.TreeItemType.INVALID) {
+			if (nextType == GMenu.TreeItemType.ENTRY) {
+				let entry = iter.get_entry();
+				if (!entry.get_app_info().get_nodisplay()) {
+					let app = this._appSys.lookup_app(entry.get_desktop_file_id());
+					childrens.push(app);
+					this._appList.push(app);
+				}
+			} else if (nextType == GMenu.TreeItemType.DIRECTORY) {
+				childrens = this._fillCategories2(iter.get_directory(), childrens);
+			}
+		}
+		return childrens;
+	},
 
 	clickedCathegory: function(button) {
 		for(var i = 0; i < this.buttons.length; i++) {
@@ -254,8 +266,14 @@ const ActivityAppLauncher = new Lang.Class({
 				this.iconsContainer.remove_all_children();
 				var position = 0;
 				var currentContainer = null;
-				for(let i = 0;i < button.launchers.length; i++) {
-					var element = button.launchers[i];
+				var launcherList = null;
+				if (button.launchers === null) {
+					launcherList = this.favorites.getFavorites();
+				} else {
+					launcherList = button.launchers;
+				}
+				for(let i = 0;i < launcherList.length; i++) {
+					var element = launcherList[i];
 					if (position == 0) {
 						currentContainer = new St.BoxLayout({vertical: false, x_expand: true});
 						this.iconsContainer.add_child(currentContainer,{expand: true});
@@ -310,7 +328,7 @@ const ActivityAppLauncher = new Lang.Class({
 					Main.overview._controls._thumbnailsSlider.actor.show_all();
 				}
 				for (let i = 0; i < workspacesDisplay._workspacesViews.length; i++)
-            	workspacesDisplay._workspacesViews[i].actor.show();
+				workspacesDisplay._workspacesViews[i].actor.show();
 				workspacesDisplay.actor.show();
 				Main.overview._controls.viewSelector.actor.show();
 			} else {
@@ -319,7 +337,7 @@ const ActivityAppLauncher = new Lang.Class({
 					Main.overview._controls._thumbnailsSlider.actor.hide();
 				}
 				for (let i = 0; i < workspacesDisplay._workspacesViews.length; i++)
-            	workspacesDisplay._workspacesViews[i].actor.hide();
+				workspacesDisplay._workspacesViews[i].actor.hide();
 				workspacesDisplay.actor.hide();
 				Main.overview._controls.viewSelector.actor.hide();
 			}
@@ -336,7 +354,7 @@ const CathegoryMenuItem = new Lang.Class({
 		this.cat = cathegory;
 		this.launchers = launchers;
 		if (cathegory === null) {
-			cathegory = _("Activities");
+			cathegory = _("Windows");
 		}
 		this.parent({label: cathegory, style_class: "world-clocks-button button", toggle_mode: true, can_focus: true, track_hover: true});
 		this.connect("clicked",Lang.bind(this,function() {
