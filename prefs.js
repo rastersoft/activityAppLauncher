@@ -5,7 +5,12 @@ const GLib = imports.gi.GLib;
 
 const ExtensionUtils = imports.misc.extensionUtils;
 const Gio = imports.gi.Gio;
-//const SlingShot_App_Launcher = ExtensionUtils.getCurrentExtension();
+const Gettext = imports.gettext;
+
+Gettext.textdomain("activityAppLauncher");
+Gettext.bindtextdomain("activityAppLauncher", ExtensionUtils.getCurrentExtension().path + "/locale");
+
+var _=Gettext.gettext
 
 const SCHEMA = 'org.gnome.shell.extensions.activityAppLauncher';
 
@@ -45,11 +50,17 @@ function get_schema(schema) {
 function buildPrefsWidget() {
     let frame = new Gtk.Box({ orientation: Gtk.Orientation.VERTICAL, border_width: 10, spacing: 10});
 
-    let desktops_switch = buildSwitcher('show-virtual-desktops', "Show the virtual desktops when a category has been chosen.");
+    let desktops_switch = buildSwitcher('show-virtual-desktops', _("Show the virtual desktops when a category has been chosen."));
     frame.add(desktops_switch);
 
-    let icon_size = buildSpinButton('icon-size',"Size for icons");
+    let icon_size = buildSpinButton('icon-size',_("Size for the icons."));
     frame.add(icon_size);
+	
+	let show_favorites = buildSwitcher('show-favorites',_("Show 'Favorite apps' in the category menu."));
+    frame.add(show_favorites);
+	
+	let show_frequent = buildSwitcher('show-frequent',_("Show 'Frequent apps' in the category menu."));
+    frame.add(show_frequent);
 
     frame.show_all();
 
@@ -75,7 +86,7 @@ function buildSpinButton(key, labeltext) {
     let hbox = new Gtk.Box({orientation: Gtk.Orientation.HORIZONTAL, spacing: 10 });
 
     let label = new Gtk.Label({label: labeltext, xalign: 0 });
-    let adjust = new Gtk.Adjustment({lower: 16, upper: 128, value: settings.get_boolean(key), step_increment: 16});
+    let adjust = new Gtk.Adjustment({lower: 16, upper: 128, value: settings.get_int(key), step_increment: 16});
     let spin = new Gtk.SpinButton({digits: 0, adjustment: adjust});
 
 

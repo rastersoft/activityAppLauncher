@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2016-12-28 01:34+0100\n"
+"POT-Creation-Date: 2016-12-29 00:27+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,14 +17,30 @@ msgstr ""
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: extension.js:170
+#: extension.js:179
 msgid "Windows"
 msgstr ""
 
-#: extension.js:179
+#: extension.js:184
 msgid "Favorites"
 msgstr ""
 
-#: extension.js:183
-msgid "Most used"
+#: extension.js:190
+msgid "Frequent"
+msgstr ""
+
+#: prefs.js:48
+msgid "Show the virtual desktops when a category has been chosen."
+msgstr ""
+
+#: prefs.js:51
+msgid "Size for the icons."
+msgstr ""
+
+#: prefs.js:54
+msgid "Show 'Favorite apps' in the category menu."
+msgstr ""
+
+#: prefs.js:57
+msgid "Show 'Frequent apps' in the category menu."
 msgstr ""

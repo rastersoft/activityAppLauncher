@@ -22,6 +22,16 @@
         <summary>Size for icons</summary>
         <description>Specify the size for the icons in pixels.</description>
     </key>
+	<key type="b" name="show-favorites">
+        <default>true</default>
+        <summary>Add a cathegory button to show Favorites apps.</summary>
+        <description></description>
+    </key>
+	<key type="b" name="show-frequent">
+        <default>true</default>
+        <summary>Add a cathegory button to show Frequent apps.</summary>
+        <description></description>
+    </key>
     <!-- <key name="menu-button" enum="org.gnome.shell.extensions.activityAppLauncher.menu_button_enum">
       <default>"Icon and text"</default>
       <summary>Style for the main button</summary>

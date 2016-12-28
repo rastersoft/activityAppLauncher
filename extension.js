@@ -22,11 +22,13 @@ Version 1:  * First public version
 Version 2:  * More elegant way for inserting the elements in the activities window
 			* Now, when uninstalling the extension, removes all actors (forgot to
 			  remove appsLaunchContainer)
-Version 3:  * Added "Favorites" button
-Version 4:  * Added "Most used" button
+Version 3:  * Added "Favorites apps" button
+Version 4:  * Added "Frequent apps" button
 			* Better memory management
 Version 5:  * Ensures that no foraneous elements remain in the system
 Version 6:  * Litle stupid change
+Version 7:  * Allows to choose whether to show or not the "Favorites" and "Frequent" buttons
+			* Added translations for the settings window
 */
 
 const init = function() {
@@ -50,6 +52,8 @@ const ActivityAppLauncher = new Lang.Class({
 	_onChangedSetting: function() {
 		this.icon_size = this._settings.get_int("icon-size");
 		this.show_virtual_desktops = this._settings.get_boolean("show-virtual-desktops");
+		this.show_favorites = this._settings.get_boolean("show-favorites");
+		this.show_frequent = this._settings.get_boolean("show-frequent");
 		this.icon_width = Math.floor(this.icon_size * 2);
 		this.icon_height = Math.floor(this.icon_size * 1.8);
 	},
@@ -166,11 +170,6 @@ const ActivityAppLauncher = new Lang.Class({
 		}
 		this.appsInnerContainer = new St.BoxLayout({ vertical: true });
 		this.appsContainer.add_actor(this.appsInnerContainer, {x_fill: true, y_fill: false, x_expand: false, y_expand: false});
-		this.appsInnerContainer.connect("destroy", Lang.bind(this, function(actor, event) {
-			for(var i = 0;i < actor.buttons.length; i++) {
-				actor.remove_actor(actor.buttons[i]);
-			}
-		}));
 
 		this.appsInnerContainer.buttons = [];
 		this.appsInnerContainer.appList=[];
@@ -183,13 +182,17 @@ const ActivityAppLauncher = new Lang.Class({
 		this.appsInnerContainer.add_child(categoryMenuItem);
 		this.appsInnerContainer.buttons.push(categoryMenuItem);
 		
-		let favoritesMenuItem = new CathegoryMenuItem(this,2,_("Favorites"), null);
-		this.appsInnerContainer.add_actor(favoritesMenuItem);
-		this.appsInnerContainer.buttons.push(favoritesMenuItem);
+		if (this.show_favorites) {
+			let favoritesMenuItem = new CathegoryMenuItem(this,2,_("Favorites"), null);
+			this.appsInnerContainer.add_actor(favoritesMenuItem);
+			this.appsInnerContainer.buttons.push(favoritesMenuItem);
+		}
 
-		let mostUsedMenuItem = new CathegoryMenuItem(this,3,_("Most used"), null);
-		this.appsInnerContainer.add_actor(mostUsedMenuItem);
-		this.appsInnerContainer.buttons.push(mostUsedMenuItem);
+		if (this.show_frequent) {
+			let mostUsedMenuItem = new CathegoryMenuItem(this,3,_("Frequent"), null);
+			this.appsInnerContainer.add_actor(mostUsedMenuItem);
+			this.appsInnerContainer.buttons.push(mostUsedMenuItem);
+		}
 
 		let iter = root.iter();
 		let nextType;
@@ -265,7 +268,7 @@ const ActivityAppLauncher = new Lang.Class({
 			this.appsLaunchContainer.add_actor(this.currentActor, {x_expand: true, y_expand: true});
 			this.currentActor.iconsContainer = new St.BoxLayout({ vertical: true, x_expand: true});
 			this.last_iconx = 0;
-			this.currentActor.iconsContainer.customRealizeId = this.currentActor.iconsContainer.connect_after("allocation-changed", Lang.bind(this, function(actor, event) {
+			this.currentActor.iconsContainer.connect_after("allocation-changed", Lang.bind(this, function(actor, event) {
 				let [sizex, sizey] = this.currentActor.iconsContainer.get_size();
 				
 				if (this.last_iconx >= sizex) {
