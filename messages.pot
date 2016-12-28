@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2016-12-28 00:33+0100\n"
+"POT-Creation-Date: 2016-12-28 01:34+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,10 +17,14 @@ msgstr ""
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: extension.js:175
+#: extension.js:170
+msgid "Windows"
+msgstr ""
+
+#: extension.js:179
 msgid "Favorites"
 msgstr ""
 
-#: extension.js:360
-msgid "Windows"
+#: extension.js:183
+msgid "Most used"
 msgstr ""

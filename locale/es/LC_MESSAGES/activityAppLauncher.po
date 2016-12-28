@@ -7,9 +7,9 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: 3\n"
-"Report-Msgid-Bugs-To: rastersoft@gmail.com\n"
-"POT-Creation-Date: 2016-12-28 00:33+0100\n"
-"PO-Revision-Date: 2016-12-28 01:06+0100\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2016-12-28 01:34+0100\n"
+"PO-Revision-Date: 2016-12-28 01:35+0100\n"
 "Last-Translator: Sergio Costas <rastersoft@gmail.com>\n"
 "Language-Team: Español; Castellano <rastersoft@gmail.com>\n"
 "Language: \n"
@@ -19,10 +19,14 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 "X-Generator: Gtranslator 2.91.7\n"
 
-#: extension.js:175
-msgid "Favorites"
-msgstr "Favoritos"
-
-#: extension.js:360
+#: extension.js:170
 msgid "Windows"
 msgstr "Ventanas"
+
+#: extension.js:179
+msgid "Favorites"
+msgstr "Favoritas"
+
+#: extension.js:183
+msgid "Most used"
+msgstr "Más usadas"

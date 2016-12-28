@@ -22,8 +22,8 @@ Version 1:  *first public version
 Version 2:  *more elegant way for inserting the elements in the activities window
 			*now, when uninstalling the extension, removes all actors (forgot to
 			 remove appsLaunchContainer)
-Version 3:  *added a Favorites button
-			*fixed the removing of connected signals
+Version 3:  *added "Favorites" and "Most used" buttons
+
 */
 
 const init = function() {
@@ -80,7 +80,8 @@ const ActivityAppLauncher = new Lang.Class({
 
 	enable: function() {
 		this.fill_elements(true);
-		this.favorites = Favorites.getAppFavorites();
+		this._favorites = Favorites.getAppFavorites();
+		this._usage = Shell.AppUsage.get_default();
 		this.showingId = Main.overview.connect('showing', Lang.bind(this, this._show));
 		this.hidingId = Main.overview.connect('hiding',Lang.bind(this,this._hide));
 	},
@@ -109,7 +110,6 @@ const ActivityAppLauncher = new Lang.Class({
 
 	// Modifies the Activities view to add our stage with the application categories
 	fill_elements: function(desired_mode) {
-		var old_group = Main.overview._controls._group;
 		var controls = Main.overview._controls;
 
 		if (desired_mode) {
@@ -132,6 +132,8 @@ const ActivityAppLauncher = new Lang.Class({
 		} else {
 			controls._group.remove_actor(this.appsContainer);
 			controls._group.remove_actor(this.appsLaunchContainer);
+			this.appsContainer = null;
+			this.appsLaunchContainer = null;
 		}
 
 		controls._group.remove_actor(controls.viewSelector.actor);
@@ -150,8 +152,8 @@ const ActivityAppLauncher = new Lang.Class({
 
 		this.selected = null;
 		if (this.appsInnerContainer !== null) {
-			this.appsContainer.remove_actor(this.appsInnerContainer);
 			this.appsContainer.disconnect(this.appsContainer.customDestroyId);
+			this.appsContainer.remove_actor(this.appsInnerContainer);
 		}
 		this.appsInnerContainer = new St.BoxLayout({ vertical: true });
 		this.appsContainer.add_actor(this.appsInnerContainer, {x_fill: true, y_fill: false, x_expand: false, y_expand: false});
@@ -166,7 +168,7 @@ const ActivityAppLauncher = new Lang.Class({
 		let tree = new GMenu.Tree({ menu_basename: 'applications.menu' });
 		tree.load_sync();
 		let root = tree.get_root_directory();
-		let categoryMenuItem = new CathegoryMenuItem(this,null, null);
+		let categoryMenuItem = new CathegoryMenuItem(this,1,_("Windows"), null);
 		this.appsInnerContainer.add_child(categoryMenuItem);
 		this.appsInnerContainer.customDestroyId = this.appsInnerContainer.connect("destroy", Lang.bind(this, function(actor, event) {
 			for(var i = 0;i < this.buttons.length; i++) {
@@ -175,9 +177,13 @@ const ActivityAppLauncher = new Lang.Class({
 		}));
 		this.buttons.push(categoryMenuItem);
 		
-		let favoritesMenuItem = new CathegoryMenuItem(this,_("Favorites"), null);
+		let favoritesMenuItem = new CathegoryMenuItem(this,2,_("Favorites"), null);
 		this.appsInnerContainer.add_actor(favoritesMenuItem);
 		this.buttons.push(favoritesMenuItem);
+
+		let mostUsedMenuItem = new CathegoryMenuItem(this,3,_("Most used"), null);
+		this.appsInnerContainer.add_actor(mostUsedMenuItem);
+		this.buttons.push(mostUsedMenuItem);
 
 		let iter = root.iter();
 		let nextType;
@@ -196,7 +202,7 @@ const ActivityAppLauncher = new Lang.Class({
 		}
 		this._appList.sort(this._sortApps);
 		for (var i = 0; i < this._appClass.length; i++) {
-			let categoryMenuItem = new CathegoryMenuItem(this,this._appClass[i].dirItem.get_name(), this._appClass[i].dirChilds);
+			let categoryMenuItem = new CathegoryMenuItem(this,0,this._appClass[i].dirItem.get_name(), this._appClass[i].dirChilds);
 			this.appsInnerContainer.add_actor(categoryMenuItem);
 			this.buttons.push(categoryMenuItem);
 		}
@@ -239,11 +245,15 @@ const ActivityAppLauncher = new Lang.Class({
 				tmpbutton.checked = false;
 			}
 		}
-		this.selected = button.cat;
+		if (button.launcherType == 1) {
+			this.selected = null; // for Windows list, the selected button must be null
+		} else {
+			this.selected = button.cat;
+		}
 		this.setVisibility();
 		if (this.current_actor !== null) {
-			this.appsLaunchContainer.remove_actor(this.current_actor);
 			this.appsLaunchContainer.disconnect(this.appsLaunchContainer.customDestroyId);
+			this.appsLaunchContainer.remove_actor(this.current_actor);
 			this.current_actor = null;
 		}
 		if (this.selected !== null) {
@@ -267,45 +277,56 @@ const ActivityAppLauncher = new Lang.Class({
 				var position = 0;
 				var currentContainer = null;
 				var launcherList = null;
-				if (button.launchers === null) {
-					launcherList = this.favorites.getFavorites();
-				} else {
-					launcherList = button.launchers;
+				switch (button.launcherType) {
+					case 0:
+						launcherList = button.launchers;
+						break;
+					case 2:
+						launcherList = this._favorites.getFavorites();
+						break;
+					case 3:
+						launcherList = this._usage.get_most_used("");
+						break;
+					default:
+						launcherList = null;
+						break;
 				}
-				for(let i = 0;i < launcherList.length; i++) {
-					var element = launcherList[i];
-					if (position == 0) {
-						currentContainer = new St.BoxLayout({vertical: false, x_expand: true});
-						this.iconsContainer.add_child(currentContainer,{expand: true});
-					}
-					var tmpContainer = new St.BoxLayout({vertical: true, reactive: true, style_class:'activityAppLauncher_element', width: this.icon_width, height: this.icon_height});
-					tmpContainer.icon = element.create_icon_texture(this.icon_size);
-					tmpContainer.text = new St.Label({text: element.get_name(), style_class: 'activityAppLauncher_text'});
-					tmpContainer.text.clutter_text.line_wrap_mode = Pango.WrapMode.WORD;
-					tmpContainer.text.clutter_text.line_wrap = true;
-					tmpContainer.add_child(tmpContainer.icon, {x_fill: false, y_fill: false,x_align: St.Align.MIDDLE, y_align: St.Align.START});
-					tmpContainer.add_child(tmpContainer.text, {x_fill: true, y_fill: true,x_align: St.Align.MIDDLE, y_align: St.Align.START});
-					currentContainer.add_child(tmpContainer);
-					
-					tmpContainer._app = element;
-					tmpContainer._customEventId = tmpContainer.connect('button-release-event', Lang.bind(this,
-						function(actor, event) {
-							actor._app.open_new_window(-1);
-							Main.overview.hide();
-						})
-					);
-					tmpContainer._customEnterId = tmpContainer.connect('enter-event', Lang.bind(this,
-						function (actor, event) {
-							actor.set_style_pseudo_class("selected");
-						}));
+				if (launcherList !== null) {
+					for(let i = 0;i < launcherList.length; i++) {
+						var element = launcherList[i];
+						if (position == 0) {
+							currentContainer = new St.BoxLayout({vertical: false, x_expand: true});
+							this.iconsContainer.add_child(currentContainer,{expand: true});
+						}
+						var tmpContainer = new St.BoxLayout({vertical: true, reactive: true, style_class:'activityAppLauncher_element', width: this.icon_width, height: this.icon_height});
+						tmpContainer.icon = element.create_icon_texture(this.icon_size);
+						tmpContainer.text = new St.Label({text: element.get_name(), style_class: 'activityAppLauncher_text'});
+						tmpContainer.text.clutter_text.line_wrap_mode = Pango.WrapMode.WORD;
+						tmpContainer.text.clutter_text.line_wrap = true;
+						tmpContainer.add_child(tmpContainer.icon, {x_fill: false, y_fill: false,x_align: St.Align.MIDDLE, y_align: St.Align.START});
+						tmpContainer.add_child(tmpContainer.text, {x_fill: true, y_fill: true,x_align: St.Align.MIDDLE, y_align: St.Align.START});
+						currentContainer.add_child(tmpContainer);
+						
+						tmpContainer._app = element;
+						tmpContainer._customEventId = tmpContainer.connect('button-release-event', Lang.bind(this,
+							function(actor, event) {
+								actor._app.open_new_window(-1);
+								Main.overview.hide();
+							})
+						);
+						tmpContainer._customEnterId = tmpContainer.connect('enter-event', Lang.bind(this,
+							function (actor, event) {
+								actor.set_style_pseudo_class("selected");
+							}));
 
-					tmpContainer._customLeaveId = tmpContainer.connect('leave-event', Lang.bind(this,
-						function (actor, event) {
-							actor.set_style_pseudo_class("");
-						}));
-					position++;
-					if (position == iconx) {
-						position = 0;
+						tmpContainer._customLeaveId = tmpContainer.connect('leave-event', Lang.bind(this,
+							function (actor, event) {
+								actor.set_style_pseudo_class("");
+							}));
+						position++;
+						if (position == iconx) {
+							position = 0;
+						}
 					}
 				}
 				this.appsLaunchContainer.show_all();
@@ -349,13 +370,11 @@ const CathegoryMenuItem = new Lang.Class({
 	Name: "CathegoryMenuItem",
 	Extends: St.Button,
 	
-	_init: function(topClass, cathegory, launchers) {
+	_init: function(topClass, type, cathegory, launchers) {
 		this.topClass = topClass;
 		this.cat = cathegory;
 		this.launchers = launchers;
-		if (cathegory === null) {
-			cathegory = _("Windows");
-		}
+		this.launcherType = type;
 		this.parent({label: cathegory, style_class: "world-clocks-button button", toggle_mode: true, can_focus: true, track_hover: true});
 		this.connect("clicked",Lang.bind(this,function() {
 			this.topClass.clickedCathegory(this);
