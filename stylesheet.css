@@ -10,7 +10,7 @@
 .activityAppLauncher_element {
 	padding: 10px;
 	border-radius: 0.5em;}
+
 .activityAppLauncher_element:selected {
-	background-color: rgba(192,192,192,0.15);
+	background-color: rgba(192,192,192,0.25);
 }
-	

@@ -181,7 +181,7 @@ const ActivityAppLauncher = new Lang.Class({
 		let categoryMenuItem = new CathegoryMenuItem(this,1,_("Windows"), null);
 		this.appsInnerContainer.add_child(categoryMenuItem);
 		this.appsInnerContainer.buttons.push(categoryMenuItem);
-		
+
 		if (this.show_favorites) {
 			let favoritesMenuItem = new CathegoryMenuItem(this,2,_("Favorites"), null);
 			this.appsInnerContainer.add_actor(favoritesMenuItem);
@@ -270,7 +270,7 @@ const ActivityAppLauncher = new Lang.Class({
 			this.last_iconx = 0;
 			this.currentActor.iconsContainer.connect_after("allocation-changed", Lang.bind(this, function(actor, event) {
 				let [sizex, sizey] = this.currentActor.iconsContainer.get_size();
-				
+
 				if (this.last_iconx >= sizex) {
 					return;
 				}
@@ -303,13 +303,13 @@ const ActivityAppLauncher = new Lang.Class({
 						}
 						var tmpContainer = new St.BoxLayout({vertical: true, reactive: true, style_class:'activityAppLauncher_element', width: this.icon_width, height: this.icon_height});
 						tmpContainer.icon = element.create_icon_texture(this.icon_size);
-						tmpContainer.text = new St.Label({text: element.get_name(), style_class: 'activityAppLauncher_text'});
+						tmpContainer.text = new St.Label({text: element.get_name(), style_class: 'list-search-result-title activityAppLauncher_text'});
 						tmpContainer.text.clutter_text.line_wrap_mode = Pango.WrapMode.WORD;
 						tmpContainer.text.clutter_text.line_wrap = true;
 						tmpContainer.add_child(tmpContainer.icon, {x_fill: false, y_fill: false,x_align: St.Align.MIDDLE, y_align: St.Align.START});
 						tmpContainer.add_child(tmpContainer.text, {x_fill: true, y_fill: true,x_align: St.Align.MIDDLE, y_align: St.Align.START});
 						currentContainer.add_child(tmpContainer);
-						
+
 						tmpContainer._app = element;
 						tmpContainer._customEventId = tmpContainer.connect('button-release-event', Lang.bind(this,
 							function(actor, event) {
@@ -369,7 +369,7 @@ const ActivityAppLauncher = new Lang.Class({
 const CathegoryMenuItem = new Lang.Class({
 	Name: "CathegoryMenuItem",
 	Extends: St.Button,
-	
+
 	_init: function(topClass, type, cathegory, launchers) {
 		this.topClass = topClass;
 		this.cat = cathegory;
@@ -380,6 +380,5 @@ const CathegoryMenuItem = new Lang.Class({
 			this.topClass.clickedCathegory(this);
 		}));
 		this.show_all();
-		
 	}
 });
