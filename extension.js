@@ -29,6 +29,7 @@ Version 5:  * Ensures that no foraneous elements remain in the system
 Version 6:  * Litle stupid change
 Version 7:  * Allows to choose whether to show or not the "Favorites" and "Frequent" buttons
 			* Added translations for the settings window
+Version 8:  * Fixed the name for the buttons, to avoid a clash
 */
 
 const init = function() {
@@ -178,18 +179,18 @@ const ActivityAppLauncher = new Lang.Class({
 		let tree = new GMenu.Tree({ menu_basename: 'applications.menu' });
 		tree.load_sync();
 		let root = tree.get_root_directory();
-		let categoryMenuItem = new CathegoryMenuItem(this,1,_("Windows"), null);
+		let categoryMenuItem = new AALCathegory_Menu_Item(this,1,_("Windows"), null);
 		this.appsInnerContainer.add_child(categoryMenuItem);
 		this.appsInnerContainer.buttons.push(categoryMenuItem);
 
 		if (this.show_favorites) {
-			let favoritesMenuItem = new CathegoryMenuItem(this,2,_("Favorites"), null);
+			let favoritesMenuItem = new AALCathegory_Menu_Item(this,2,_("Favorites"), null);
 			this.appsInnerContainer.add_actor(favoritesMenuItem);
 			this.appsInnerContainer.buttons.push(favoritesMenuItem);
 		}
 
 		if (this.show_frequent) {
-			let mostUsedMenuItem = new CathegoryMenuItem(this,3,_("Frequent"), null);
+			let mostUsedMenuItem = new AALCathegory_Menu_Item(this,3,_("Frequent"), null);
 			this.appsInnerContainer.add_actor(mostUsedMenuItem);
 			this.appsInnerContainer.buttons.push(mostUsedMenuItem);
 		}
@@ -211,7 +212,7 @@ const ActivityAppLauncher = new Lang.Class({
 		}
 		this.appsInnerContainer.appList.sort(this._sortApps);
 		for (var i = 0; i < this.appsInnerContainer.appClass.length; i++) {
-			let categoryMenuItem = new CathegoryMenuItem(this,0,this.appsInnerContainer.appClass[i].dirItem.get_name(), this.appsInnerContainer.appClass[i].dirChilds);
+			let categoryMenuItem = new AALCathegory_Menu_Item(this,0,this.appsInnerContainer.appClass[i].dirItem.get_name(), this.appsInnerContainer.appClass[i].dirChilds);
 			this.appsInnerContainer.add_actor(categoryMenuItem);
 			this.appsInnerContainer.buttons.push(categoryMenuItem);
 		}
@@ -366,8 +367,8 @@ const ActivityAppLauncher = new Lang.Class({
 	}
 });
 
-const CathegoryMenuItem = new Lang.Class({
-	Name: "CathegoryMenuItem",
+const AALCathegory_Menu_Item = new Lang.Class({
+	Name: "AALCathegory_Menu_Item",
 	Extends: St.Button,
 
 	_init: function(topClass, type, cathegory, launchers) {
